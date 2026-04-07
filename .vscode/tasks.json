@@ -1,0 +1,98 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Install API dependencies",
+      "type": "shell",
+      "command": "npm",
+      "args": ["install"],
+      "options": {
+        "cwd": "${workspaceFolder}/packages/api",
+        "env": {
+          "PATH": "${env:PATH};C:\\Program Files\\nodejs"
+        }
+      },
+      "group": "build"
+    },
+    {
+      "label": "Generate Prisma client",
+      "type": "shell",
+      "command": "npx",
+      "args": ["prisma", "generate"],
+      "options": {
+        "cwd": "${workspaceFolder}/packages/api",
+        "env": {
+          "PATH": "${env:PATH};C:\\Program Files\\nodejs"
+        }
+      },
+      "group": "build"
+    },
+    {
+      "label": "Run Prisma migrations",
+      "type": "shell",
+      "command": "npx",
+      "args": ["prisma", "migrate", "dev", "--name", "init"],
+      "options": {
+        "cwd": "${workspaceFolder}/packages/api",
+        "env": {
+          "PATH": "${env:PATH};C:\\Program Files\\nodejs"
+        }
+      },
+      "group": "build"
+    },
+    {
+      "label": "Seed database",
+      "type": "shell",
+      "command": "npx",
+      "args": ["ts-node", "prisma/seed.ts"],
+      "options": {
+        "cwd": "${workspaceFolder}/packages/api",
+        "env": {
+          "PATH": "${env:PATH};C:\\Program Files\\nodejs"
+        }
+      },
+      "group": "build"
+    },
+    {
+      "label": "Start API server",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "dev"],
+      "options": {
+        "cwd": "${workspaceFolder}/packages/api",
+        "env": {
+          "PATH": "${env:PATH};C:\\Program Files\\nodejs"
+        }
+      },
+      "group": "build",
+      "isBackground": true
+    },
+    {
+      "label": "Install Desktop dependencies",
+      "type": "shell",
+      "command": "npm",
+      "args": ["install"],
+      "options": {
+        "cwd": "${workspaceFolder}/packages/desktop",
+        "env": {
+          "PATH": "${env:PATH};C:\\Program Files\\nodejs"
+        }
+      },
+      "group": "build"
+    },
+    {
+      "label": "Start Desktop app",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "electron:dev"],
+      "options": {
+        "cwd": "${workspaceFolder}/packages/desktop",
+        "env": {
+          "PATH": "${env:PATH};C:\\Program Files\\nodejs"
+        }
+      },
+      "group": "build",
+      "isBackground": true
+    }
+  ]
+}

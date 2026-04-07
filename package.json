@@ -1,0 +1,21 @@
+{
+  "name": "uniform-pos",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": ["packages/*"],
+  "scripts": {
+    "dev:api": "yarn workspace @uniform-pos/api dev",
+    "dev:desktop": "yarn workspace @uniform-pos/desktop dev",
+    "dev:web": "yarn workspace @uniform-pos/web-admin dev",
+    "build:api": "yarn workspace @uniform-pos/api build",
+    "build:desktop": "yarn workspace @uniform-pos/desktop build",
+    "build:web": "yarn workspace @uniform-pos/web-admin build",
+    "db:migrate": "yarn workspace @uniform-pos/api prisma:migrate",
+    "db:seed": "yarn workspace @uniform-pos/api prisma:seed",
+    "db:studio": "yarn workspace @uniform-pos/api prisma:studio",
+    "setup": "yarn install && yarn db:migrate && yarn db:seed"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
+}
