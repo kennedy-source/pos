@@ -1,26 +1,29 @@
-const http = require('http');
+import http, { IncomingMessage, ServerResponse } from 'http';
 
 const PORT = 4000;
 
-const server = http.createServer((req, res) => {
-  // CORS headers
+const server = http.createServer((req: IncomingMessage, res: ServerResponse) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  
+
   if (req.method === 'OPTIONS') {
-    res.writeHead(200);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end();
     return;
   }
 
-  // Login endpoint
   if (req.url === '/api/v1/auth/login' && req.method === 'POST') {
     let body = '';
-    req.on('data', chunk => body += chunk);
+
+    req.on('data', (chunk: Buffer) => {
+      body += chunk.toString();
+    });
+
     req.on('end', () => {
       try {
         const { email, password } = JSON.parse(body);
+
         if (email && password) {
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({
@@ -29,27 +32,27 @@ const server = http.createServer((req, res) => {
               user: {
                 id: '1',
                 name: 'Admin User',
-                email: email,
+                email,
                 role: 'ADMIN',
                 isActive: true,
               },
-              accessToken: 'fake-token-' + Math.random().toString(),
-              refreshToken: 'fake-refresh-' + Math.random().toString(),
+              accessToken: 'fake-token-' + Math.random(),
+              refreshToken: 'fake-refresh-' + Math.random(),
             }
           }));
         } else {
           res.writeHead(400, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ success: false, message: 'Missing credentials' }));
         }
-      } catch (e) {
+      } catch {
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: false, message: 'Invalid JSON' }));
       }
     });
+
     return;
   }
 
-  // Health check
   if (req.url === '/api/v1/health' && req.method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ success: true, data: { status: 'ok' } }));
@@ -61,6 +64,5 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`\n✅ Temporary API Server running on http://localhost:${PORT}`);
-  console.log(`Available endpoints:\n  POST /api/v1/auth/login\n  GET /api/v1/health\n`);
+  console.log(`✅ API running on http://localhost:${PORT}`);
 });

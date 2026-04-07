@@ -228,7 +228,11 @@ export function EmbroideryJobPage() {
     onError: (err: any) => toast.error(err.message),
   });
 
-  if (isPending) return <div className="flex justify-center items-center h-full"><Loader2 className="animate-spin text-slate-400" size={32} /></div>;
+  if (isLoading) return (
+      <div className="flex justify-center items-center h-full">
+        <Loader2 className="animate-spin text-slate-400" size={32} />
+      </div>
+    );
   if (!job) return <div className="p-6 text-slate-400">Job not found</div>;
 
   const STATUS_TRANSITIONS: Record<string, string[]> = {

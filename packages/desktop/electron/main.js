@@ -2,64 +2,69 @@ const { app, BrowserWindow, ipcMain, shell, dialog } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
 const axios = require('axios');
-const { autoUpdater } = require('electron-updater');
+
+let autoUpdater;
+try {
+  autoUpdater = require('electron-updater').autoUpdater;
+} catch (e) {
+  console.log("Updater not available");
+}
+
 const isDev = !app.isPackaged;
 let mainWindow;
 let backendProcess = null;
 
-// Configure and check for updates
-autoUpdater.checkForUpdatesAndNotify();
+// Safe updater
+if (autoUpdater) {
+  autoUpdater.checkForUpdatesAndNotify();
+}
 
-// Start backend server
+// 🔥 START BACKEND (FIXED)
 async function startBackend() {
   try {
-    // Check if backend is already running
     const response = await axios.get('http://localhost:3000/health', { timeout: 2000 }).catch(() => null);
     if (response) {
-      console.log('✅ Backend already running on port 3000');
+      console.log('✅ Backend already running');
       return;
     }
-  } catch (e) {
-    // Backend not running, start it
-  }
+  } catch {}
 
   try {
-    console.log('🚀 Starting backend server...');
-    const apiPath = isDev 
-      ? path.join(__dirname, '../../api')
-      : path.join(process.resourcesPath, 'api');
+    console.log('🚀 Starting backend...');
 
-    // Start backend process
-    backendProcess = spawn('npm', ['run', 'dev'], {
-      cwd: apiPath,
+    const backendPath = isDev
+      ? path.join(__dirname, '../../api/dist/main.js')
+      : path.join(process.resourcesPath, 'app.asar.unpacked', 'api', 'dist', 'main.js');
+
+    backendProcess = spawn('node', [backendPath], {
       stdio: 'ignore',
       shell: true,
       detached: true,
     });
 
     backendProcess.unref();
-    
-    console.log('✅ Backend started successfully');
 
-    // Wait for backend to be ready
+    console.log('✅ Backend process started');
+
     let retries = 0;
-    const maxRetries = 30;
-    while (retries < maxRetries) {
+    while (retries < 20) {
       try {
         await axios.get('http://localhost:3000/health', { timeout: 1000 });
-        console.log('✅ Backend is ready!');
+        console.log('✅ Backend is ready');
         return;
-      } catch (e) {
-        retries++;
+      } catch {
         await new Promise(r => setTimeout(r, 1000));
+        retries++;
       }
     }
-    console.warn('⚠️ Backend started but health check timeout');
+
+    console.warn('⚠️ Backend startup timeout');
   } catch (error) {
-    console.error('❌ Failed to start backend:', error);
+    console.error('❌ Backend failed:', error);
   }
 }
 
+// 🖥 CREATE WINDOW
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1400,
@@ -72,7 +77,6 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
     },
     icon: path.join(__dirname, '../public/icon.png'),
-    titleBarStyle: 'default',
     title: 'UniForm POS',
     show: false,
   });
@@ -88,35 +92,29 @@ function createWindow() {
     mainWindow.show();
     mainWindow.maximize();
   });
-
-  mainWindow.on('closed', () => {
-    mainWindow = null;
-  });
 }
 
+// 🚀 APP READY
 app.whenReady().then(async () => {
   await startBackend();
   createWindow();
 });
 
+// 🛑 CLEANUP
 app.on('window-all-closed', () => {
-  // Kill backend process
   if (backendProcess) {
     try {
       process.kill(-backendProcess.pid);
-    } catch (e) {
-      console.log('Backend process already terminated');
-    }
+    } catch {}
   }
   if (process.platform !== 'darwin') app.quit();
 });
 
 app.on('before-quit', () => {
-  // Ensure backend is killed
   if (backendProcess) {
     try {
       process.kill(-backendProcess.pid);
-    } catch (e) {}
+    } catch {}
   }
 });
 
@@ -124,69 +122,50 @@ app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) createWindow();
 });
 
-// Auto-update event handlers
-let updateAvailable = false;
+// 🔄 AUTO UPDATE EVENTS
+if (autoUpdater) {
+  autoUpdater.on('update-available', () => {
+    mainWindow?.webContents.send('update-available');
+  });
 
-autoUpdater.on('update-available', () => {
-  updateAvailable = true;
-  if (mainWindow) {
-    mainWindow.webContents.send('update-available');
-  }
-});
+  autoUpdater.on('update-downloaded', () => {
+    mainWindow?.webContents.send('update-downloaded');
+  });
 
-autoUpdater.on('update-downloaded', () => {
-  if (mainWindow) {
-    mainWindow.webContents.send('update-downloaded');
-  }
-});
+  ipcMain.handle('check-for-updates', async () => {
+    try {
+      const result = await autoUpdater.checkForUpdates();
+      return {
+        updateAvailable: result.updateInfo !== null,
+        currentVersion: app.getVersion(),
+        newVersion: result.updateInfo?.version,
+      };
+    } catch (error) {
+      return { updateAvailable: false };
+    }
+  });
 
-// IPC: Check for updates
-ipcMain.handle('check-for-updates', async () => {
-  try {
-    const result = await autoUpdater.checkForUpdates();
-    return {
-      updateAvailable: result.updateInfo !== null,
-      currentVersion: app.getVersion(),
-      newVersion: result.updateInfo?.version,
-    };
-  } catch (error) {
-    return { updateAvailable: false, error: error.message };
-  }
-});
+  ipcMain.handle('install-update', () => {
+    autoUpdater.quitAndInstall();
+  });
+}
 
-// IPC: Install update and restart
-ipcMain.handle('install-update', () => {
-  autoUpdater.quitAndInstall();
-});
-
-// IPC: Print receipt
-ipcMain.handle('print-receipt', async (event, receiptHtml) => {
-  const printWindow = new BrowserWindow({ show: false });
-  printWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(receiptHtml)}`);
-  printWindow.webContents.on('did-finish-load', () => {
-    printWindow.webContents.print(
-      { silent: false, printBackground: true, copies: 1 },
-      (success, errorType) => {
-        printWindow.close();
-      }
-    );
+// 🧾 PRINT
+ipcMain.handle('print-receipt', async (event, html) => {
+  const win = new BrowserWindow({ show: false });
+  win.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
+  win.webContents.on('did-finish-load', () => {
+    win.webContents.print({ printBackground: true }, () => win.close());
   });
 });
 
-// IPC: Open external link
-ipcMain.handle('open-external', (event, url) => {
-  shell.openExternal(url);
-});
+// 🌐 EXTERNAL LINKS
+ipcMain.handle('open-external', (e, url) => shell.openExternal(url));
 
-// IPC: Show save dialog
-ipcMain.handle('show-save-dialog', async (event, options) => {
+// 💾 SAVE DIALOG
+ipcMain.handle('show-save-dialog', (e, options) => {
   return dialog.showSaveDialog(mainWindow, options);
 });
 
-// IPC: App version
+// 📦 VERSION
 ipcMain.handle('get-version', () => app.getVersion());
-
-// IPC: Fullscreen toggle
-ipcMain.handle('toggle-fullscreen', () => {
-  mainWindow.setFullScreen(!mainWindow.isFullScreen());
-});

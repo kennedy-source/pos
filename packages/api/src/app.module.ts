@@ -12,6 +12,7 @@ import { EmbroideryModule } from './modules/embroidery/embroidery.module';
 import { CustomersModule } from './modules/customers/customers.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { SyncModule } from './modules/sync/sync.module';
+import { Controller, Get } from '@nestjs/common';
 
 @Module({
   imports: [
@@ -39,3 +40,12 @@ import { SyncModule } from './modules/sync/sync.module';
   ],
 })
 export class AppModule {}
+@Controller()
+export class AppController {
+  @Get('/health')
+  health() {
+    return { status: 'ok' };
+  }
+}
+
+

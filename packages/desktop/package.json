@@ -3,18 +3,23 @@
   "version": "1.0.1",
   "private": true,
   "main": "electron/main.js",
+
+  "description": "UniForm POS - Desktop system for uniform shops",
+  "author": "UniForm POS",
+
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build && electron-builder",
     "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
     "preview": "vite preview"
   },
+
   "dependencies": {
     "@tanstack/react-query": "^5.28.0",
     "axios": "^1.6.7",
     "date-fns": "^3.4.0",
     "dayjs": "^1.11.10",
-    "electron-updater": "^6.1.7",
+    "electron-updater": "^6.8.3",
     "lucide-react": "^0.358.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -23,6 +28,7 @@
     "recharts": "^2.12.0",
     "zustand": "^4.5.2"
   },
+
   "devDependencies": {
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
@@ -37,24 +43,39 @@
     "vite": "^5.1.0",
     "wait-on": "^7.2.0"
   },
+
   "build": {
     "appId": "co.ke.uniformpos",
     "productName": "UniForm POS",
+
     "directories": {
       "output": "release"
     },
-    "publish": {
-      "provider": "github",
-      "owner": "your-github-username",
-      "repo": "uniform-pos"
-    },
+
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "../api/dist/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+
+    "asar": true,
+
+    "asarUnpack": [
+      "**/node_modules/electron-updater/**/*",
+      "**/api/dist/**/*"
+    ],
+
     "win": {
       "target": "nsis",
       "icon": "public/icon.ico"
     },
+
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": true
     }
   }
 }
