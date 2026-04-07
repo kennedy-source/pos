@@ -5,6 +5,7 @@ import { Toaster } from 'react-hot-toast';
 import { useAuthStore } from './store/authStore';
 import { LoginPage } from './pages/LoginPage';
 import { AppLayout } from './components/shared/AppLayout';
+import { UpdateNotification } from './components/shared/UpdateNotification';
 import { DashboardPage } from './pages/DashboardPage';
 import { POSPage } from './pages/POSPage';
 import { InventoryPage } from './pages/InventoryPage';
@@ -61,6 +62,7 @@ export default function App() {
             },
           }}
         />
+        <UpdateNotification />
         <Routes>
           <Route path="/login" element={<LoginPage />} />
 
